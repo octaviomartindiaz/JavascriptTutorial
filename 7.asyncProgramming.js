@@ -56,7 +56,7 @@ const promiseOfEvenInteger = new Promise((resolve, reject) => {
 
 promiseOfEvenInteger
   .then(message => console.log('Then: ' + message))
-  .catch(message => console.log('Catch: ' + message))
+  .catch(error => console.error('Catch: ' + error))
 
 // Async/await solution
 async function noPromise () {
