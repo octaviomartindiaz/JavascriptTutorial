@@ -1,53 +1,39 @@
-exports.create = async function (req, res) {
-  const err = validationResult(req)
+const models = require('../models')
+const { validationResult } = require('express-validator')
+const moment = require('moment')
 
+const Restaurant = models.Restaurant
+const Order = models.order
+
+exports.deliver = async function (req, res) {
+  // the err from validation result
+  const err = validationResult(req)
   if (err.errors.length > 0) {
     res.status(422).send(err)
   } else {
-    let newOrder = Order.build(req.body)
-    const restaurant = await Restaurant.findByPk(newOrder.restaurantId)
-    newOrder.userId = req.user.id
-    newOrder.price = 0
-    const productLines = req.body.products
-    let products
     try {
-      products = await Product.findAll({
-        where: {
-          id: productLines.map(pl => pl.productId)
-        }
-      })
-    } catch (err) { console.log(err) }
+      const O = await Order.findByPk(req.params.orderId) //the order
+      if (!O) {
+        res.status(404).send('Order not found')
+      } else {
+        O.deliveredAt = new Date()
+        //O.priority=null
+        //O.setQuality(moment(o.deliveredAt).diff(moment(o.createdAt), 'minutes')%5)
+        let uO = await O.save()
 
-    // Ale! quiero el == jaja
-    // eslint-disable-next-line eqeqeq
-    try {
-      productLines.forEach(pl => { pl.unityPrice = products.find(p => p.id == pl.productId).price })
-      newOrder.price = productLines.reduce((acc, pl) => acc + pl.quantity * pl.unityPrice, 0)
+        const current_res_data = await Restaurant.findByPk(O.restaurantId)
 
-      newOrder.shippingCosts = 0
-      // RN: Pedidos de más de 10€ no tienen gastos de envío
-      if (newOrder.price < 10) {
-        newOrder.shippingCosts = restaurant.shippingCosts
-        newOrder.price += newOrder.shippingCosts
+        // compute the average service time for current restaurant
+        // retrieve orders
+        const orders = await current_res_data.getOrders()
+        const times_computed = orders.filter(o => o.deliveredAt).map(o => moment(o.deliveredAt).diff(moment(o.createdAt), 'minutes'))
+        const tm = times_computed.reduce((acc, serviceTime) => acc + serviceTime, 0) / times_computed.length
+
+        await Restaurant.update({ averageServiceMinutes: tm }, { where: { id: O.restaurantId } })
+        uO = await O.reload()
+        res.json(uO)
       }
-    } catch (err) { }
-    const t = await models.sequelize.transaction()
-    try {
-      newOrder = await newOrder.save({ transaction: t })
-      for (const pl of productLines) {
-        await newOrder.addProduct(pl.productId, { through: { quantity: pl.quantity, unityPrice: pl.unityPrice }, transaction: t })
-      }
-      newOrder = await newOrder.reload({
-        include: {
-          model: Product,
-          as: 'products'
-        },
-        transaction: t
-      })
-      await t.commit()
-      res.json(newOrder)
     } catch (err) {
-      await t.rollback()
       if (err.name.includes('ValidationError')) {
         res.status(422).send(err)
       } else {
