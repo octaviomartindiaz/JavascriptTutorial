@@ -1,10 +1,9 @@
-// Loading from node_modules folder by its identifier
-const axios = require('axios')
+// Using ESModules (Ecma Script) with import / export
+import axios from 'axios'
 const baseUrl = 'https://jsonplaceholder.typicode.com'
 const usersEndpointPath = '/users'
 
-// Equivalent to module.exports
-exports.getUsers = async function () {
+const getUsers = async function () {
   try {
     const response = await axios.get((`${baseUrl}${usersEndpointPath}`))
     return response.data
@@ -12,7 +11,8 @@ exports.getUsers = async function () {
     console.log(error)
   }
 }
-exports.getUserById = async function (id) {
+
+const getUserById = async function (id) {
   try {
     const response = await axios.get(`${baseUrl}${usersEndpointPath}\\${id}`)
     return response.data
@@ -20,3 +20,5 @@ exports.getUserById = async function (id) {
     console.log(error)
   }
 }
+
+export { getUsers, getUserById }

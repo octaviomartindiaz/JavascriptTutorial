@@ -72,7 +72,7 @@ async function noPromise () {
 noPromise()
 
 // Other example
-const axios = require('axios')
+import axios from 'axios'
 const usersEndpointUrl = 'https://jsonplaceholder.typicode.com/users'
 
 // First version with promises
