@@ -26,13 +26,13 @@ console.log('Get by user ID')
 // .then(user => console.log(user))
 // .catch(err => console.err(err))
 
-async function processUserbyId () {
+async function processUserbyId (id) {
   try {
-    const user = await getUserById(1)
+    const user = await getUserById(id)
     console.log(`Users: ${JSON.stringify(user)}`)
   } catch (error) {
     console.log(error)
   }
 }
 
-processUserbyId()
+processUserbyId(1)
